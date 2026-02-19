@@ -87,5 +87,6 @@ fi
 
 python3 - <<PY
 import json
-print(json.dumps({"ok": True, "repo": "${REPO}", "default_branch": "${DEFAULT_BRANCH}", "strict_mode": ${STRICT_MODE}}, ensure_ascii=False))
+strict_mode = "${STRICT_MODE}".strip().lower() == "true"
+print(json.dumps({"ok": True, "repo": "${REPO}", "default_branch": "${DEFAULT_BRANCH}", "strict_mode": strict_mode}, ensure_ascii=False))
 PY

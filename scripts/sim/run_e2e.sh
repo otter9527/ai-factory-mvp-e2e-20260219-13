@@ -65,22 +65,12 @@ acceptance:
 ${title}
 BODY
 )
-  local payload
-  payload=$(python3 - <<PY
-import json
-print(json.dumps({
-  "title": """${title}""",
-  "body": """${body}""",
-  "labels": ["type/task", "status/${status}"]
-}))
-PY
-)
-  gh api -X POST "repos/${REPO}/issues" --input - <<<"$payload" | python3 - <<'PY'
-import json
-import sys
-data = json.load(sys.stdin)
-print(data["number"])
-PY
+  gh api -X POST "repos/${REPO}/issues" \
+    -f "title=${title}" \
+    -f "body=${body}" \
+    -f "labels[]=type/task" \
+    -f "labels[]=status/${status}" \
+    --jq '.number'
 }
 
 TASK1_ISSUE=$(create_task_issue "TASK-001" "IMPL" "ready" "[]" "Task 001: Implement add" "add returns correct result")
