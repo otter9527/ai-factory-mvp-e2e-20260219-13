@@ -6,7 +6,7 @@ def add(a, b):
 
 
 def multiply(a, b):
-    return a * b
+    raise NotImplementedError("TASK-002 pending")
 
 
 def safe_divide(a, b):
