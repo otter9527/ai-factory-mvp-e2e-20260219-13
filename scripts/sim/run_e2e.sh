@@ -65,19 +65,34 @@ acceptance:
 ${title}
 BODY
 )
-  gh issue create --repo "$REPO" --title "$title" --label "type/task" --label "status/${status}" --body "$body" >/tmp/e2e_issue_url.txt
-  local url
-  url="$(cat /tmp/e2e_issue_url.txt)"
-  echo "$url" | sed -n 's#.*/issues/\([0-9]\+\).*#\1#p'
+  local payload
+  payload=$(python3 - <<PY
+import json
+print(json.dumps({
+  "title": """${title}""",
+  "body": """${body}""",
+  "labels": ["type/task", "status/${status}"]
+}))
+PY
+)
+  gh api -X POST "repos/${REPO}/issues" --input - <<<"$payload" | python3 - <<'PY'
+import json
+import sys
+data = json.load(sys.stdin)
+print(data["number"])
+PY
 }
 
 TASK1_ISSUE=$(create_task_issue "TASK-001" "IMPL" "ready" "[]" "Task 001: Implement add" "add returns correct result")
 TASK2_ISSUE=$(create_task_issue "TASK-002" "IMPL" "ready" "[\"TASK-001\"]" "Task 002: Implement multiply" "multiply returns correct result")
 
+sleep 3
+
 python3 scripts/pm/sync_state.py --repo "$REPO" --run-id "$RUN_ID" --event "phase_mock_start"
 python3 scripts/pm/dispatch_tasks.py --repo "$REPO" --run-id "$RUN_ID"
 
-OUT1=$(scripts/worker/run_task.sh --repo "$REPO" --issue "$TASK1_ISSUE" --worker worker-a --ai-mode mock)
+OUT1_RAW=$(scripts/worker/run_task.sh --repo "$REPO" --issue "$TASK1_ISSUE" --worker worker-a --ai-mode mock)
+OUT1=$(echo "$OUT1_RAW" | tail -n 1)
 PR1=$(echo "$OUT1" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["pr_number"])')
 gh pr merge "$PR1" --repo "$REPO" --squash --delete-branch --auto
 wait_for_merge "$PR1"
@@ -108,7 +123,8 @@ PY
 done
 
 python3 scripts/pm/dispatch_tasks.py --repo "$REPO" --run-id "$RUN_ID"
-OUT2=$(scripts/worker/run_task.sh --repo "$REPO" --issue "$TASK2_ISSUE" --worker worker-b --ai-mode mock)
+OUT2_RAW=$(scripts/worker/run_task.sh --repo "$REPO" --issue "$TASK2_ISSUE" --worker worker-b --ai-mode mock)
+OUT2=$(echo "$OUT2_RAW" | tail -n 1)
 PR2=$(echo "$OUT2" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["pr_number"])')
 gh pr merge "$PR2" --repo "$REPO" --squash --delete-branch --auto
 wait_for_merge "$PR2"
@@ -119,7 +135,8 @@ REAL_NOTE="skipped"
 if [[ "$REAL_MODE" == "true" ]]; then
   TASK3_ISSUE=$(create_task_issue "TASK-003" "IMPL" "ready" "[\"TASK-002\"]" "Task 003: Implement safe_divide" "safe_divide returns quotient and handles zero")
   python3 scripts/pm/dispatch_tasks.py --repo "$REPO" --run-id "$RUN_ID"
-  OUT3=$(scripts/worker/run_task.sh --repo "$REPO" --issue "$TASK3_ISSUE" --worker worker-a --ai-mode real)
+  OUT3_RAW=$(scripts/worker/run_task.sh --repo "$REPO" --issue "$TASK3_ISSUE" --worker worker-a --ai-mode real)
+  OUT3=$(echo "$OUT3_RAW" | tail -n 1)
   PR3=$(echo "$OUT3" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["pr_number"])')
   REAL_TASK_MODE=$(echo "$OUT3" | python3 -c 'import json,sys; print(str(json.loads(sys.stdin.read()).get("ai_mode","")))')
   gh pr merge "$PR3" --repo "$REPO" --squash --delete-branch --auto

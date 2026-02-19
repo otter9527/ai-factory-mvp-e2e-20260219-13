@@ -36,13 +36,16 @@ fi
 git branch -M "$DEFAULT_BRANCH"
 
 if gh repo view "$REPO" >/dev/null 2>&1; then
-  if git remote get-url origin >/dev/null 2>&1; then
-    :
-  else
-    git remote add origin "https://github.com/${REPO}.git"
-  fi
+  :
 else
-  gh repo create "$REPO" "--${VISIBILITY}" --source . --remote origin --disable-wiki --description "AI Factory MVP E2E flow"
+  gh repo create "$REPO" "--${VISIBILITY}" --disable-wiki --description "AI Factory MVP E2E flow"
+fi
+
+REMOTE_URL="https://github.com/${REPO}.git"
+if git remote get-url origin >/dev/null 2>&1; then
+  git remote set-url origin "$REMOTE_URL"
+else
+  git remote add origin "$REMOTE_URL"
 fi
 
 git push -u origin "$DEFAULT_BRANCH"
