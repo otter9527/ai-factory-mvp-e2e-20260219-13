@@ -155,8 +155,17 @@ def parse_args_repo_run(parser: argparse.ArgumentParser) -> argparse.Namespace:
 
 
 def current_login() -> str:
-    user = gh_api("user")
+    try:
+        user = gh_api("user")
+    except RuntimeError:
+        actor = os.getenv("GITHUB_ACTOR", "").strip()
+        if actor:
+            return actor
+        raise
     if not isinstance(user, dict) or "login" not in user:
+        actor = os.getenv("GITHUB_ACTOR", "").strip()
+        if actor:
+            return actor
         raise RuntimeError("unable to resolve current gh login")
     return str(user["login"])
 

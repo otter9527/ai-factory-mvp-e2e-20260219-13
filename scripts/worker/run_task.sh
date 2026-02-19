@@ -226,8 +226,13 @@ PRBODY
 )
 
 if [[ -z "$PR_NUMBER" ]]; then
-  PR_URL="$(gh pr create --repo "$REPO" --head "$BRANCH" --base main --title "feat: ${TASK_ID} by ${WORKER}" --body "$PR_BODY")"
-  PR_NUMBER="$(echo "$PR_URL" | sed -n 's#.*/pull/\([0-9]\+\).*#\1#p')"
+  gh pr create --repo "$REPO" --head "$BRANCH" --base main --title "feat: ${TASK_ID} by ${WORKER}" --body "$PR_BODY" >/dev/null
+  PR_NUMBER="$(gh pr list --repo "$REPO" --head "$BRANCH" --json number -q '.[0].number // empty')"
+  if [[ -z "$PR_NUMBER" ]]; then
+    echo "Failed to resolve PR number after creation for branch ${BRANCH}" >&2
+    exit 1
+  fi
+  PR_URL="https://github.com/${REPO}/pull/${PR_NUMBER}"
 else
   gh pr edit "$PR_NUMBER" --repo "$REPO" --title "feat: ${TASK_ID} by ${WORKER}" --body "$PR_BODY" >/dev/null
   PR_URL="https://github.com/${REPO}/pull/${PR_NUMBER}"

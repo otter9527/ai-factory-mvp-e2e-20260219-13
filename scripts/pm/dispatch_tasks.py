@@ -80,6 +80,9 @@ def main() -> int:
     all_issues = _load_task_issues(args.repo)
     lookup = _task_map(all_issues)
     login = current_login()
+    assignees: list[str] | None = None
+    if login and not login.endswith("[bot]"):
+        assignees = [login]
 
     in_progress_count: dict[str, int] = {name: 0 for name in workers.keys()}
     for entry in lookup.values():
@@ -141,7 +144,7 @@ def main() -> int:
             title=str(issue.get("title") or f"Task {task_id}"),
             body=body,
             labels=labels,
-            assignees=[login],
+            assignees=assignees,
         )
 
         payload = {
