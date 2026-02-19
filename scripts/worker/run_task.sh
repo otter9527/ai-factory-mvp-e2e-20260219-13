@@ -206,6 +206,8 @@ fi
 
 git commit -m "feat(${TASK_ID}): implement by ${WORKER} [${AI_MODE}]"
 git push -u origin "$BRANCH" --force
+# Ensure required checks are attached even if push event delivery is delayed.
+gh workflow run "PR Check" --repo "$REPO" --ref "$BRANCH" >/dev/null 2>&1 || true
 
 PR_NUMBER="$(gh pr list --repo "$REPO" --head "$BRANCH" --json number -q '.[0].number // empty')"
 PR_BODY=$(cat <<PRBODY
