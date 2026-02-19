@@ -191,6 +191,8 @@ status_path.write_text(
 )
 PY
 
+python3 -m pip install -q -r requirements.txt
+
 python3 -m pytest tests/unit -v
 python3 -m pytest tests/acceptance -m "$MARKER" -v
 
