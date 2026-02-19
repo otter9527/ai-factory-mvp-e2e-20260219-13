@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
-  issues: read
 
 jobs:
   policy-check:
@@ -16,30 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Build policy context from branch
+      - name: Validate branch and commit metadata
         run: |
           REF="$GITHUB_REF_NAME"
-          NUM=$(echo "$REF" | grep -Eo '[0-9]+' | tail -1)
-          if [[ -z "$NUM" ]]; then
-            echo "Cannot parse task number from branch: $REF" >&2
+          if ! echo "$REF" | grep -Eq '^worker/.+'; then
+            echo "Invalid worker branch: $REF" >&2
             exit 1
           fi
-          MARKER=$(printf 'task_%03d' "$NUM")
-          COMMIT_MSG=$(git log -1 --pretty=%s)
-          if [[ "$COMMIT_MSG" != *"TASK-"* ]]; then
+          if ! echo "$REF" | grep -Eq '[0-9]+'; then
+            echo "Missing task number in branch: $REF" >&2
+            exit 1
+          fi
+          MSG=$(git log -1 --pretty=%s)
+          if [[ "$MSG" != *"TASK-"* ]]; then
             echo "Commit message must include TASK-* token" >&2
             exit 1
           fi
-          python - <<PY
-import json
-from pathlib import Path
-payload = {"ok": True, "ref": "${REF}", "marker": "${MARKER}", "commit": "${COMMIT_MSG}"}
-Path('/tmp/policy.json').write_text(json.dumps(payload), encoding='utf-8')
-PY
-          cat /tmp/policy.json
 
   lint-format:
     name: lint-format
@@ -78,15 +68,12 @@ PY
           python-version: "3.11"
       - name: Install deps
         run: python -m pip install -r requirements.txt
-      - name: Resolve task marker
+      - name: Resolve marker and run acceptance
         run: |
-          REF="$GITHUB_REF_NAME"
-          NUM=$(echo "$REF" | grep -Eo '[0-9]+' | tail -1)
+          NUM=$(echo "$GITHUB_REF_NAME" | grep -Eo '[0-9]+' | tail -1)
           if [[ -z "$NUM" ]]; then
-            echo "Cannot parse task number from branch: $REF" >&2
+            echo "Cannot parse task number from branch: $GITHUB_REF_NAME" >&2
             exit 1
           fi
           MARKER=$(printf 'task_%03d' "$NUM")
-          echo "marker=${MARKER}" >> "$GITHUB_ENV"
-      - name: Run acceptance tests
-        run: python -m pytest tests/acceptance -m "$marker" -v
+          python -m pytest tests/acceptance -m "$MARKER" -v
