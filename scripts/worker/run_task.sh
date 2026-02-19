@@ -205,7 +205,7 @@ if git diff --cached --quiet; then
 fi
 
 git commit -m "feat(${TASK_ID}): implement by ${WORKER} [${AI_MODE}]"
-git push -u origin "$BRANCH" --force-with-lease
+git push -u origin "$BRANCH" --force
 
 PR_NUMBER="$(gh pr list --repo "$REPO" --head "$BRANCH" --json number -q '.[0].number // empty')"
 PR_BODY=$(cat <<PRBODY
