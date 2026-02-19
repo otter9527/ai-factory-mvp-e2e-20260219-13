@@ -1,0 +1,27 @@
+name: Task
+about: Structured task for orchestrator
+title: "Task: <short title>"
+labels: ["type/task", "status/ready"]
+body:
+  - type: textarea
+    id: frontmatter
+    attributes:
+      label: Frontmatter
+      description: Keep YAML frontmatter for parser.
+      value: |
+        ---
+        task_id: TASK-001
+        task_type: IMPL
+        status: ready
+        depends_on: []
+        owner_worker: ""
+        acceptance:
+          - "Describe acceptance"
+        ---
+  - type: textarea
+    id: details
+    attributes:
+      label: Task details
+      description: Human-readable task description.
+      value: |
+        Implement according to acceptance criteria.

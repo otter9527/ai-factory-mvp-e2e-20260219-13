@@ -1,0 +1,47 @@
+name: Orchestrator
+
+on:
+  issues:
+    types: [opened, edited, reopened, labeled, unlabeled]
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [closed]
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: python -m pip install -r requirements.txt
+      - name: Sync state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID="${{ github.run_id }}-${{ github.run_attempt }}"
+          python scripts/pm/sync_state.py --repo "${{ github.repository }}" --run-id "$RUN_ID" --event "${{ github.event_name }}"
+      - name: Dispatch tasks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID="${{ github.run_id }}-${{ github.run_attempt }}"
+          python scripts/pm/dispatch_tasks.py --repo "${{ github.repository }}" --run-id "$RUN_ID"
+      - name: Post-merge progression
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID="${{ github.run_id }}-${{ github.run_attempt }}"
+          python scripts/pm/on_pr_merged.py --repo "${{ github.repository }}" --pr "${{ github.event.pull_request.number }}" --run-id "$RUN_ID"

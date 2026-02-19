@@ -1,0 +1,7 @@
+workers:
+  worker-a:
+    label: worker/a
+    task_types: [IMPL, DEBUG, REVIEW, INTEGRATION]
+  worker-b:
+    label: worker/b
+    task_types: [IMPL, DEBUG, REVIEW, INTEGRATION]

@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+state/runs/*
+!state/runs/.gitkeep
+reports/*.tmp

@@ -1,0 +1,1 @@
+"""MVP application package."""

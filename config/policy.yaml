@@ -1,0 +1,20 @@
+required_checks:
+  - policy-check
+  - unit-tests
+  - acceptance-tests
+  - lint-format
+branch_protection:
+  default_branch: main
+  strict_status_checks: true
+  enforce_admins: true
+  allow_force_pushes: false
+  allow_deletions: false
+task_types:
+  - REQ
+  - DESIGN
+  - SPLIT
+  - TEST_PLAN
+  - IMPL
+  - DEBUG
+  - REVIEW
+  - INTEGRATION
