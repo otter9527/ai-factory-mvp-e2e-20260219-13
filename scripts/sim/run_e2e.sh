@@ -43,6 +43,11 @@ wait_for_merge() {
   return 1
 }
 
+wait_for_checks() {
+  local pr="$1"
+  gh pr checks "$pr" --repo "$REPO" --watch --interval 10
+}
+
 create_task_issue() {
   local task_id="$1"
   local task_type="$2"
@@ -84,7 +89,8 @@ python3 scripts/pm/dispatch_tasks.py --repo "$REPO" --run-id "$RUN_ID"
 OUT1_RAW=$(scripts/worker/run_task.sh --repo "$REPO" --issue "$TASK1_ISSUE" --worker worker-a --ai-mode mock)
 OUT1=$(echo "$OUT1_RAW" | tail -n 1)
 PR1=$(echo "$OUT1" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["pr_number"])')
-gh pr merge "$PR1" --repo "$REPO" --squash --delete-branch --auto
+wait_for_checks "$PR1"
+gh pr merge "$PR1" --repo "$REPO" --squash --delete-branch
 wait_for_merge "$PR1"
 
 # wait for orchestrator to unlock TASK-002
@@ -116,7 +122,8 @@ python3 scripts/pm/dispatch_tasks.py --repo "$REPO" --run-id "$RUN_ID"
 OUT2_RAW=$(scripts/worker/run_task.sh --repo "$REPO" --issue "$TASK2_ISSUE" --worker worker-b --ai-mode mock)
 OUT2=$(echo "$OUT2_RAW" | tail -n 1)
 PR2=$(echo "$OUT2" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["pr_number"])')
-gh pr merge "$PR2" --repo "$REPO" --squash --delete-branch --auto
+wait_for_checks "$PR2"
+gh pr merge "$PR2" --repo "$REPO" --squash --delete-branch
 wait_for_merge "$PR2"
 
 TASK3_ISSUE=""
@@ -129,7 +136,8 @@ if [[ "$REAL_MODE" == "true" ]]; then
   OUT3=$(echo "$OUT3_RAW" | tail -n 1)
   PR3=$(echo "$OUT3" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["pr_number"])')
   REAL_TASK_MODE=$(echo "$OUT3" | python3 -c 'import json,sys; print(str(json.loads(sys.stdin.read()).get("ai_mode","")))')
-  gh pr merge "$PR3" --repo "$REPO" --squash --delete-branch --auto
+  wait_for_checks "$PR3"
+  gh pr merge "$PR3" --repo "$REPO" --squash --delete-branch
   wait_for_merge "$PR3"
   REAL_NOTE="completed(ai_mode=${REAL_TASK_MODE})"
 fi
