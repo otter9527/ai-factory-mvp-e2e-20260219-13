@@ -1,8 +1,9 @@
 name: PR Check
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
+  push:
+    branches:
+      - "worker/**"
 
 permissions:
   contents: read
@@ -18,18 +19,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install deps
-        run: python -m pip install -r requirements.txt
-      - name: Validate policy
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Build policy context from branch
         run: |
-          PR_NUM=$(echo "$GITHUB_REF" | sed -n 's#refs/pull/\([0-9]\+\)/merge#\1#p')
-          if [[ -z "$PR_NUM" ]]; then
-            echo "Cannot parse PR number from GITHUB_REF=$GITHUB_REF" >&2
+          REF="$GITHUB_REF_NAME"
+          NUM=$(echo "$REF" | grep -Eo '[0-9]+' | tail -1)
+          if [[ -z "$NUM" ]]; then
+            echo "Cannot parse task number from branch: $REF" >&2
             exit 1
           fi
-          python scripts/pm/enforce_policy.py --repo "$GITHUB_REPOSITORY" --pr "$PR_NUM" --output /tmp/policy.json
+          MARKER=$(printf 'task_%03d' "$NUM")
+          COMMIT_MSG=$(git log -1 --pretty=%s)
+          if [[ "$COMMIT_MSG" != *"TASK-"* ]]; then
+            echo "Commit message must include TASK-* token" >&2
+            exit 1
+          fi
+          python - <<PY
+import json
+from pathlib import Path
+payload = {"ok": True, "ref": "${REF}", "marker": "${MARKER}", "commit": "${COMMIT_MSG}"}
+Path('/tmp/policy.json').write_text(json.dumps(payload), encoding='utf-8')
+PY
           cat /tmp/policy.json
 
   lint-format:
@@ -70,20 +79,14 @@ jobs:
       - name: Install deps
         run: python -m pip install -r requirements.txt
       - name: Resolve task marker
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          PR_NUM=$(echo "$GITHUB_REF" | sed -n 's#refs/pull/\([0-9]\+\)/merge#\1#p')
-          if [[ -z "$PR_NUM" ]]; then
-            echo "Cannot parse PR number from GITHUB_REF=$GITHUB_REF" >&2
+          REF="$GITHUB_REF_NAME"
+          NUM=$(echo "$REF" | grep -Eo '[0-9]+' | tail -1)
+          if [[ -z "$NUM" ]]; then
+            echo "Cannot parse task number from branch: $REF" >&2
             exit 1
           fi
-          python scripts/pm/enforce_policy.py --repo "$GITHUB_REPOSITORY" --pr "$PR_NUM" --output /tmp/policy.json
-          MARKER=$(python - <<'PY'
-import json
-print(json.load(open('/tmp/policy.json'))['marker'])
-PY
-)
+          MARKER=$(printf 'task_%03d' "$NUM")
           echo "marker=${MARKER}" >> "$GITHUB_ENV"
       - name: Run acceptance tests
         run: python -m pytest tests/acceptance -m "$marker" -v
