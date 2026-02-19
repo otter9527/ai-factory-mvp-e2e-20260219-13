@@ -10,4 +10,6 @@ def multiply(a, b):
 
 
 def safe_divide(a, b):
-    raise NotImplementedError("TASK-003 pending")
+    if b == 0:
+        raise ValueError("division by zero")
+    return a / b
