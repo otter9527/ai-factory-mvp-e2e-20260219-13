@@ -45,7 +45,64 @@ wait_for_merge() {
 
 wait_for_checks() {
   local pr="$1"
-  gh pr checks "$pr" --repo "$REPO" --watch --interval 10
+  local sha
+  sha="$(gh pr view "$pr" --repo "$REPO" --json headRefOid -q '.headRefOid')"
+  local tries=60
+  while [[ $tries -gt 0 ]]; do
+    export CHECKS_JSON
+    CHECKS_JSON="$(gh api "repos/${REPO}/commits/${sha}/check-runs" 2>/dev/null || true)"
+    if [[ -z "$CHECKS_JSON" ]]; then
+      sleep 10
+      tries=$((tries - 1))
+      continue
+    fi
+
+    read -r total pending failed <<<"$(python3 - <<'PY'
+import json
+import os
+
+raw = os.environ.get("CHECKS_JSON", "")
+if not raw.strip():
+    print("0 0 0")
+    raise SystemExit(0)
+obj = json.loads(raw)
+runs = obj.get("check_runs", [])
+total = len(runs)
+pending = 0
+failed = 0
+ok_conclusions = {"success", "neutral", "skipped"}
+for run in runs:
+    status = str(run.get("status") or "")
+    conclusion = str(run.get("conclusion") or "")
+    if status != "completed":
+        pending += 1
+    elif conclusion not in ok_conclusions:
+        failed += 1
+print(f"{total} {pending} {failed}")
+PY
+)"
+
+    if [[ "$total" -eq 0 ]]; then
+      sleep 10
+      tries=$((tries - 1))
+      continue
+    fi
+    if [[ "$pending" -gt 0 ]]; then
+      sleep 10
+      tries=$((tries - 1))
+      continue
+    fi
+    if [[ "$failed" -gt 0 ]]; then
+      echo "Checks failed for PR #${pr}" >&2
+      gh pr checks "$pr" --repo "$REPO" || true
+      return 1
+    fi
+    return 0
+  done
+
+  echo "Timed out waiting for checks on PR #${pr}" >&2
+  gh pr checks "$pr" --repo "$REPO" || true
+  return 1
 }
 
 create_task_issue() {
