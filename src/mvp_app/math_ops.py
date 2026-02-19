@@ -1,13 +1,13 @@
 """Small module used by the MVP worker flow."""
 
 
-def add(a: int | float, b: int | float) -> int | float:
+def add(a, b):
     return a + b
 
 
-def multiply(a: int | float, b: int | float) -> int | float:
+def multiply(a, b):
     raise NotImplementedError("TASK-002 pending")
 
 
-def safe_divide(a: int | float, b: int | float) -> float:
+def safe_divide(a, b):
     raise NotImplementedError("TASK-003 pending")

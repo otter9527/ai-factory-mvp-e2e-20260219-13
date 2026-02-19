@@ -109,45 +109,45 @@ if task_id == "TASK-001":
     content = '''"""Small module used by the MVP worker flow."""
 
 
-def add(a: int | float, b: int | float) -> int | float:
+def add(a, b):
     return a + b
 
 
-def multiply(a: int | float, b: int | float) -> int | float:
+def multiply(a, b):
     raise NotImplementedError("TASK-002 pending")
 
 
-def safe_divide(a: int | float, b: int | float) -> float:
+def safe_divide(a, b):
     raise NotImplementedError("TASK-003 pending")
 '''
 elif task_id == "TASK-002":
     content = '''"""Small module used by the MVP worker flow."""
 
 
-def add(a: int | float, b: int | float) -> int | float:
+def add(a, b):
     return a + b
 
 
-def multiply(a: int | float, b: int | float) -> int | float:
+def multiply(a, b):
     return a * b
 
 
-def safe_divide(a: int | float, b: int | float) -> float:
+def safe_divide(a, b):
     raise NotImplementedError("TASK-003 pending")
 '''
 elif task_id == "TASK-003":
     content = '''"""Small module used by the MVP worker flow."""
 
 
-def add(a: int | float, b: int | float) -> int | float:
+def add(a, b):
     return a + b
 
 
-def multiply(a: int | float, b: int | float) -> int | float:
+def multiply(a, b):
     return a * b
 
 
-def safe_divide(a: int | float, b: int | float) -> float:
+def safe_divide(a, b):
     if b == 0:
         raise ValueError("division by zero")
     return a / b
@@ -156,15 +156,15 @@ else:
     content = '''"""Small module used by the MVP worker flow."""
 
 
-def add(a: int | float, b: int | float) -> int | float:
+def add(a, b):
     return a + b
 
 
-def multiply(a: int | float, b: int | float) -> int | float:
+def multiply(a, b):
     return a * b
 
 
-def safe_divide(a: int | float, b: int | float) -> float:
+def safe_divide(a, b):
     if b == 0:
         raise ValueError("division by zero")
     return a / b
