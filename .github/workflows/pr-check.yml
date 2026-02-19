@@ -28,7 +28,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            python scripts/pm/enforce_policy.py --repo "${{ github.repository }}" --pr "${{ github.event.pull_request.number }}" --output /tmp/policy.json
+            PR_NUM="$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")"
+            if [[ -z "$PR_NUM" ]]; then
+              echo "Missing pull_request.number in event payload" >&2
+              exit 1
+            fi
+            python scripts/pm/enforce_policy.py --repo "${{ github.repository }}" --pr "$PR_NUM" --output /tmp/policy.json
           else
             REF="${{ github.ref_name }}"
             NUM="$(echo "$REF" | grep -Eo '[0-9]+' | tail -1)"
@@ -85,7 +90,12 @@ PY
           GH_TOKEN: ${{ github.token }}
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            python scripts/pm/enforce_policy.py --repo "${{ github.repository }}" --pr "${{ github.event.pull_request.number }}" --output /tmp/policy.json
+            PR_NUM="$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")"
+            if [[ -z "$PR_NUM" ]]; then
+              echo "Missing pull_request.number in event payload" >&2
+              exit 1
+            fi
+            python scripts/pm/enforce_policy.py --repo "${{ github.repository }}" --pr "$PR_NUM" --output /tmp/policy.json
           else
             REF="${{ github.ref_name }}"
             NUM="$(echo "$REF" | grep -Eo '[0-9]+' | tail -1)"
